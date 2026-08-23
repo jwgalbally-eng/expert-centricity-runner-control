@@ -1,0 +1,49 @@
+name: lightning-studio-control
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Start or stop the Lightning Studio
+        required: true
+        default: start
+        type: choice
+        options:
+          - start
+          - stop
+      machine:
+        description: lightning_sdk Machine enum used for start
+        required: true
+        default: T4
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lightning-studio-control
+  cancel-in-progress: false
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Lightning SDK
+        run: python -m pip install --disable-pip-version-check lightning-sdk
+
+      - name: Control Studio
+        env:
+          LIGHTNING_USER_ID: ${{ secrets.LIGHTNING_USER_ID }}
+          LIGHTNING_API_KEY: ${{ secrets.LIGHTNING_API_KEY }}
+          LIGHTNING_STUDIO_NAME: ${{ secrets.LIGHTNING_STUDIO_NAME }}
+        run: |
+          python wake_lightning.py \
+            '${{ inputs.operation }}' \
+            --machine '${{ inputs.machine }}'
